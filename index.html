@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arya's Reading Log 📚</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="logo"><span class="mark">📚</span> Arya's Reading Log</div>
+  <nav class="nav">
+    <button data-go="home">🏠 Home</button>
+    <button data-go="library">📖 Library</button>
+    <button data-go="log">✏️ My Log</button>
+    <button data-go="quests">🎮 Quests</button>
+    <button data-go="stories">✨ My Stories</button>
+  </nav>
+  <div class="streakchip" id="gemchip">💎 0</div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ HOME ============ -->
+  <section id="view-home" class="view active">
+    <div class="hero">
+      <span class="blob">📚</span>
+      <h1 id="hello">Hi Arya! 👋</h1>
+      <p class="sub">Pick your grade, choose a book, and read. Then go beat the voice quests!</p>
+      <div class="stats">
+        <div class="stat"><b id="s-books">0</b><span>Books logged</span></div>
+        <div class="stat"><b id="s-minutes">0</b><span>Minutes read</span></div>
+        <div class="stat"><b id="s-streak">0</b><span>Day streak</span></div>
+        <div class="stat"><b id="s-stories">0</b><span>Stories told</span></div>
+      </div>
+    </div>
+
+    <h2>Choose your grade 🎒</h2>
+    <p class="sub">Every grade has its own shelf. You can visit any shelf you like.</p>
+    <div class="grade-grid" id="grade-grid"></div>
+
+    <h2>Jump back in ⏩</h2>
+    <div id="recent-home"></div>
+
+    <h2>My badges 🏅</h2>
+    <div class="badges" id="badges"></div>
+  </section>
+
+  <!-- ============ LIBRARY ============ -->
+  <section id="view-library" class="view">
+    <button class="back" data-go="home">← All grades</button>
+    <h1 id="lib-title">Grade 3 Shelf</h1>
+    <p class="sub" id="lib-sub"></p>
+    <button class="btn ghost" id="set-grade" style="margin-bottom:16px">⭐ Make this my grade</button>
+    <input class="search" id="lib-search" type="text" placeholder="🔎 Search a title or author…">
+    <div class="filters" id="lib-filters"></div>
+    <div class="book-grid" id="book-grid"></div>
+  </section>
+
+  <!-- ============ BOOK DETAIL ============ -->
+  <section id="view-book" class="view">
+    <button class="back" id="book-back">← Back to shelf</button>
+    <div id="book-detail"></div>
+  </section>
+
+  <!-- ============ MY LOG ============ -->
+  <section id="view-log" class="view">
+    <h1>My Reading Log ✏️</h1>
+    <p class="sub">Everything you have read, in your own words.</p>
+    <div class="row">
+      <div class="panel" style="flex:1 1 300px">
+        <h2 style="margin-top:0">Add a book by hand</h2>
+        <label class="f">Title</label><input type="text" id="man-title" placeholder="The book I just finished">
+        <label class="f">Author</label><input type="text" id="man-author" placeholder="Who wrote it?">
+        <label class="f">Minutes read</label><input type="number" id="man-min" value="20" min="1">
+        <label class="f">Stars</label>
+        <div class="stars" id="man-stars"></div>
+        <label class="f">What did you think?</label><textarea id="man-note" placeholder="My favorite part was…"></textarea>
+        <button class="btn mint" id="man-save" style="margin-top:16px">➕ Add to my log</button>
+      </div>
+      <div class="panel" style="flex:2 1 420px">
+        <h2 style="margin-top:0">My books <span id="log-count" style="color:var(--ink-soft);font-size:1rem"></span></h2>
+        <div id="log-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ QUEST MAP ============ -->
+  <section id="view-quests" class="view">
+    <h1>Voice Quests 🎮🎤</h1>
+    <p class="sub">Every answer is spoken out loud — no typing needed. Beat a level to unlock the next one.</p>
+    <div id="mic-notice"></div>
+    <div class="filters" id="band-filters"></div>
+    <div class="level-grid" id="level-grid"></div>
+  </section>
+
+  <!-- ============ QUEST PLAYER ============ -->
+  <section id="view-play" class="view">
+    <button class="back" data-go="quests">← Quest map</button>
+    <div class="qbar"><div id="qprogress" style="width:0%"></div></div>
+    <div id="qstage"></div>
+  </section>
+
+  <!-- ============ STORIES ============ -->
+  <section id="view-stories" class="view">
+    <h1>My Story Book ✨</h1>
+    <p class="sub">Every story you made up out loud gets written down here.</p>
+    <div id="story-list"></div>
+  </section>
+
+</main>
+
+<canvas id="confetti"></canvas>
+
+<script src="data/books.js"></script>
+<script src="data/quests.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
