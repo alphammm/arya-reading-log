@@ -9,6 +9,8 @@
 </head>
 <body>
 
+<div id="bubbles"></div>
+
 <header class="topbar">
   <div class="logo"><span class="mark">📚</span> Arya's Reading Log</div>
   <nav class="nav">
@@ -16,7 +18,9 @@
     <button data-go="library">📖 Library</button>
     <button data-go="log">✏️ My Log</button>
     <button data-go="quests">🎮 Quests</button>
-    <button data-go="stories">✨ My Stories</button>
+    <button data-go="map">🗺️ Map</button>
+    <button data-go="buddy">🐣 Buddy</button>
+    <button data-go="stories">✨ Stories</button>
   </nav>
   <div class="streakchip" id="gemchip">💎 0</div>
 </header>
@@ -37,9 +41,36 @@
       </div>
     </div>
 
+    <div class="mascot-row">
+      <svg class="owl" id="owl" viewBox="0 0 200 200" aria-label="Ollie the reading owl">
+        <path class="wing l" d="M44 106 q-20 32 2 62 q18 -18 20 -50z" fill="#8b52e8"/>
+        <path class="wing r" d="M156 106 q20 32 -2 62 q-18 -18 -20 -50z" fill="#8b52e8"/>
+        <ellipse cx="100" cy="122" rx="60" ry="64" fill="#a06bf5"/>
+        <path d="M60 66 l4 -34 l28 20z" fill="#a06bf5"/>
+        <path d="M140 66 l-4 -34 l-28 20z" fill="#a06bf5"/>
+        <ellipse cx="100" cy="150" rx="34" ry="30" fill="#c9a6ff" opacity=".55"/>
+        <circle cx="76" cy="100" r="26" fill="#fff"/>
+        <circle cx="124" cy="100" r="26" fill="#fff"/>
+        <circle cx="77" cy="102" r="12" fill="#22223b"/>
+        <circle cx="123" cy="102" r="12" fill="#22223b"/>
+        <circle cx="81" cy="97" r="4.5" fill="#fff"/>
+        <circle cx="127" cy="97" r="4.5" fill="#fff"/>
+        <path d="M100 114 l-9 13 h18z" fill="#ffb703"/>
+        <rect x="64" y="152" width="72" height="30" rx="7" fill="#ff5d8f"/>
+        <rect x="64" y="152" width="72" height="30" rx="7" fill="none" stroke="#fff" stroke-width="3"/>
+        <line x1="100" y1="152" x2="100" y2="182" stroke="#fff" stroke-width="3"/>
+        <ellipse class="lid" cx="76" cy="100" rx="27" ry="27" fill="#a06bf5"/>
+        <ellipse class="lid b" cx="124" cy="100" rx="27" ry="27" fill="#a06bf5"/>
+      </svg>
+      <div class="bubble" id="owl-bubble">Hi! I'm Ollie 🦉 Tap me!</div>
+    </div>
+
     <h2>Choose your grade 🎒</h2>
     <p class="sub">Every grade has its own shelf. You can visit any shelf you like.</p>
     <div class="grade-grid" id="grade-grid"></div>
+
+    <h2>Play &amp; grow 🎈</h2>
+    <div class="level-grid" id="fun-grid"></div>
 
     <h2>Jump back in ⏩</h2>
     <div id="recent-home"></div>
@@ -53,7 +84,10 @@
     <button class="back" data-go="home">← All grades</button>
     <h1 id="lib-title">Grade 3 Shelf</h1>
     <p class="sub" id="lib-sub"></p>
-    <button class="btn ghost" id="set-grade" style="margin-bottom:16px">⭐ Make this my grade</button>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+      <button class="btn ghost" id="set-grade">⭐ Make this my grade</button>
+      <button class="btn pink" id="spin-btn">🎡 Surprise me!</button>
+    </div>
     <input class="search" id="lib-search" type="text" placeholder="🔎 Search a title or author…">
     <div class="filters" id="lib-filters"></div>
     <div class="book-grid" id="book-grid"></div>
@@ -101,6 +135,32 @@
     <button class="back" data-go="quests">← Quest map</button>
     <div class="qbar"><div id="qprogress" style="width:0%"></div></div>
     <div id="qstage"></div>
+  </section>
+
+  <!-- ============ ADVENTURE MAP ============ -->
+  <section id="view-map" class="view">
+    <h1>My Reading Adventure 🗺️</h1>
+    <p class="sub">Every book, every quest and every story moves you along the trail. Where will you get to?</p>
+    <div class="map-wrap" id="map-wrap"></div>
+    <div class="map-legend">
+      <span>📘 1 book = 1 step</span><span>🎮 1 quest level = 1 step</span><span>✨ 1 story = 2 steps</span>
+    </div>
+    <div class="panel" id="map-note" style="margin-top:22px"></div>
+  </section>
+
+  <!-- ============ READING BUDDY ============ -->
+  <section id="view-buddy" class="view">
+    <h1>My Reading Buddy 🐣</h1>
+    <p class="sub">Your buddy grows every time you earn 💎 gems. Read, quest, and watch it hatch!</p>
+    <div class="buddy-stage" id="buddy-stage">
+      <div id="buddy-holder"></div>
+      <h2 id="buddy-name" style="margin:14px 0 2px"></h2>
+      <p class="sub" id="buddy-say" style="margin-bottom:6px"></p>
+      <div class="grow-bar"><div id="grow-fill" style="width:0%"></div></div>
+      <p class="sub" id="grow-text" style="margin:0"></p>
+      <div class="evo-row" id="evo-row"></div>
+      <button class="btn pink" id="pet-btn" style="margin-top:20px">💗 Pet your buddy</button>
+    </div>
   </section>
 
   <!-- ============ STORIES ============ -->

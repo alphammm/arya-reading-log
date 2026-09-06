@@ -132,6 +132,8 @@ function go(view, arg) {
   if (view === 'log') renderLog();
   if (view === 'quests') renderQuestMap();
   if (view === 'stories') renderStories();
+  if (view === 'map') renderMap();
+  if (view === 'buddy') renderBuddy();
 }
 
 document.addEventListener('click', e => {
@@ -202,6 +204,26 @@ function renderHome() {
     b.onclick = () => { currentGrade = Number(b.dataset.grade); go('library', currentGrade); };
   });
 
+  const st = buddyStage();
+  const steps = adventureSteps();
+  const nextStop = MILESTONES.find(m => steps < m.at);
+  $('#fun-grid').innerHTML = `
+    <button class="level-card" data-go="quests">
+      <div class="e">🎤</div><div class="t">Voice Quests</div>
+      <div class="b">Speak your answers out loud. ${clearedLevels()} level${clearedLevels() === 1 ? '' : 's'} cleared so far.</div>
+      <div class="score" style="color:var(--brand)">Play now →</div>
+    </button>
+    <button class="level-card" data-go="map">
+      <div class="e">🗺️</div><div class="t">Adventure Map</div>
+      <div class="b">${nextStop ? `Next stop: ${nextStop.e} ${nextStop.n}` : 'You finished the whole trail!'}</div>
+      <div class="score" style="color:var(--mint)">${steps} steps walked →</div>
+    </button>
+    <button class="level-card" data-go="buddy">
+      <div class="e">${st.e}</div><div class="t">My Reading Buddy</div>
+      <div class="b">${st.n} — grows every time you earn gems.</div>
+      <div class="score" style="color:var(--pink)">💎 ${S.gems} gems →</div>
+    </button>`;
+
   const recent = S.logs.slice(0, 3);
   $('#recent-home').innerHTML = recent.length
     ? recent.map(l => logItemHTML(l, false)).join('')
@@ -247,6 +269,8 @@ function renderLibrary(grade) {
     renderLibrary(currentGrade);
   };
 
+  $('#spin-btn').onclick = openWheel;
+
   $('#lib-search').value = libQuery;
   $('#lib-search').oninput = e => { libQuery = e.target.value; drawBooks(); };
 
@@ -264,7 +288,10 @@ function drawBooks() {
   $('#book-grid').innerHTML = books.length ? books.map((b, i) => {
     const done = S.logs.some(l => l.bookId === b.id);
     return `<button class="book-card" data-book="${b.id}">
-      <div class="cover" style="background:${COVERS[i % COVERS.length]}">${b.emoji}${done ? '<span class="done">✓ READ</span>' : ''}</div>
+      <div class="cover anim" style="background:${COVERS[i % COVERS.length]};--d:${(i % 6) * 0.25}s">
+        <span class="sparkle s1">✨</span><span class="sparkle s2">⭐</span><span class="sparkle s3">💫</span>
+        <span class="cover-emoji">${b.emoji}</span>${done ? '<span class="done">✓ READ</span>' : ''}
+      </div>
       <div class="body">
         <div class="t">${b.title}</div>
         <div class="a">${b.author}</div>
@@ -303,7 +330,10 @@ function renderBook(id) {
   $('#book-detail').innerHTML = `
     <div class="row">
       <div class="panel" style="flex:1 1 320px">
-        <div class="cover" style="height:190px;border-radius:18px;font-size:82px;background:${COVERS[0]}">${b.emoji}</div>
+        <div class="cover anim" style="height:190px;border-radius:18px;font-size:82px;background:${COVERS[0]}">
+          <span class="sparkle s1">✨</span><span class="sparkle s2">⭐</span><span class="sparkle s3">💫</span>
+          <span class="cover-emoji">${b.emoji}</span>
+        </div>
         <h1 style="margin-top:18px;font-size:1.6rem">${b.title}</h1>
         <p class="sub" style="margin-bottom:10px">by ${b.author}</p>
         <p style="line-height:1.6;font-weight:600">${b.blurb}</p>
@@ -830,9 +860,274 @@ function tick(now) {
   else { ctx.clearRect(0, 0, cv.width, cv.height); raf = null; }
 }
 
+/* (boot happens at the very bottom of this file, after every helper is defined) */
+
+/* ===========================================================
+   ✨ v2 — 动画层：漂浮气泡 / 猫头鹰导师 / 冒险地图 / 阅读伙伴 / 抽书转盘
+   =========================================================== */
+
+/* ---------- floating background emoji ---------- */
+(function bubbles() {
+  const host = $('#bubbles');
+  if (!host) return;
+  const set = ['📕', '📗', '📘', '⭐', '✨', '📚', '🌟', '💫', '🎈', '🦋'];
+  let html = '';
+  for (let i = 0; i < 14; i++) {
+    const left = Math.round(Math.random() * 96);
+    const dur = 16 + Math.random() * 20;
+    const delay = -Math.random() * 30;
+    const size = 20 + Math.random() * 22;
+    html += `<span style="left:${left}%;font-size:${size}px;animation-duration:${dur}s;animation-delay:${delay}s">${set[i % set.length]}</span>`;
+  }
+  host.innerHTML = html;
+})();
+
+/* ---------- Ollie the owl ---------- */
+const OWL_TIPS = [
+  'Hi! I am Ollie 🦉 Tap me for a tip!',
+  'Reading 20 minutes a day is like leveling up your brain ⚡',
+  'Stuck on a word? Read the whole sentence, then guess. 🕵️',
+  'In Quests you answer by SPEAKING. Be loud and brave! 🎤',
+  'Try a book from a higher grade — you might surprise yourself 🚀',
+  'Finished a book? Log it and watch your buddy grow 🐣',
+  'Making up your own story is the best kind of homework ✨',
+  'Read it out loud. Your ears help your brain understand. 👂',
+  'Every book you finish is one more step on your map 🗺️',
+  'You do not have to like every book. Try three chapters first. 📖'
+];
+let owlTip = 0;
+
+function owlSays(text, speak) {
+  const b = $('#owl-bubble');
+  if (!b) return;
+  b.style.animation = 'none';
+  void b.offsetWidth;
+  b.style.animation = '';
+  b.textContent = text;
+  const owl = $('#owl');
+  if (owl) { owl.classList.add('flap'); setTimeout(() => owl.classList.remove('flap'), 1000); }
+  if (speak) Speech.say(text.replace(/[^\w\s'!,.?]/g, ''));
+}
+
+if ($('#owl')) {
+  $('#owl').onclick = () => { owlTip = (owlTip + 1) % OWL_TIPS.length; owlSays(OWL_TIPS[owlTip], true); };
+  $('#owl-bubble').onclick = () => $('#owl').click();
+}
+
+/* ---------- adventure map ---------- */
+const MILESTONES = [
+  { at: 1, e: '🌱', n: 'First Step' },
+  { at: 2, e: '🏡', n: 'Cozy Cabin' },
+  { at: 4, e: '🌳', n: 'Story Woods' },
+  { at: 6, e: '🌉', n: 'Word Bridge' },
+  { at: 9, e: '⛺', n: 'Camp Chapter' },
+  { at: 12, e: '🏔️', n: 'Grammar Peak' },
+  { at: 16, e: '🏰', n: 'Library Castle' },
+  { at: 21, e: '🌋', n: 'Volcano of Verbs' },
+  { at: 27, e: '🏝️', n: 'Poem Island' },
+  { at: 34, e: '🛸', n: 'Sci-Fi Space' },
+  { at: 42, e: '🐉', n: 'Dragon Peak' },
+  { at: 52, e: '👑', n: 'Reading Royalty' }
+];
+
+function adventureSteps() {
+  return S.logs.length + clearedLevels() + S.stories.length * 2;
+}
+
+function renderMap() {
+  const steps = adventureSteps();
+  const host = $('#map-wrap');
+  const W = 900, H = 330;
+
+  host.innerHTML = `<svg viewBox="0 0 ${W} ${H}">
+    <path id="trailPath" d="M40 250 C 140 250, 150 90, 250 90 S 380 250, 470 250 S 600 90, 690 90 S 800 220, 836 250"
+      fill="none" stroke="#e3d9cc" stroke-width="20" stroke-linecap="round"/>
+    <path class="trail" d="M40 250 C 140 250, 150 90, 250 90 S 380 250, 470 250 S 600 90, 690 90 S 800 220, 836 250"
+      fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
+    <g id="mapNodes"></g>
+  </svg>`;
+
+  const path = host.querySelector('#trailPath');
+  const g = host.querySelector('#mapNodes');
+  const len = path.getTotalLength();
+  const NS = 'http://www.w3.org/2000/svg';
+  let hikerPt = path.getPointAtLength(0);
+
+  MILESTONES.forEach((m, i) => {
+    const p = path.getPointAtLength((i / (MILESTONES.length - 1)) * len);
+    const done = steps >= m.at;
+    const isNext = !done && (i === 0 || steps >= MILESTONES[i - 1].at);
+    if (done) hikerPt = p;
+
+    if (isNext) {
+      const ring = document.createElementNS(NS, 'circle');
+      ring.setAttribute('cx', p.x); ring.setAttribute('cy', p.y); ring.setAttribute('r', 24);
+      ring.setAttribute('fill', 'none'); ring.setAttribute('stroke', '#6c4cf1'); ring.setAttribute('stroke-width', '4');
+      ring.setAttribute('class', 'node-now');
+      g.appendChild(ring);
+    }
+
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', p.x); c.setAttribute('cy', p.y); c.setAttribute('r', 24);
+    c.setAttribute('fill', done ? '#fff' : '#f2ece3');
+    c.setAttribute('stroke', done ? '#06d6a0' : '#ddd4c7');
+    c.setAttribute('stroke-width', '5');
+    if (done) c.setAttribute('class', 'node-done');
+    g.appendChild(c);
+
+    const t = document.createElementNS(NS, 'text');
+    t.setAttribute('x', p.x); t.setAttribute('y', p.y + 9);
+    t.setAttribute('text-anchor', 'middle'); t.setAttribute('font-size', '24');
+    t.style.filter = done ? '' : 'grayscale(1) opacity(.5)';
+    t.textContent = m.e;
+    g.appendChild(t);
+
+    const lab = document.createElementNS(NS, 'text');
+    lab.setAttribute('x', p.x); lab.setAttribute('y', p.y + (p.y > 170 ? 48 : -36));
+    lab.setAttribute('text-anchor', 'middle'); lab.setAttribute('font-size', '13');
+    lab.setAttribute('font-weight', '900');
+    lab.setAttribute('fill', done ? '#22223b' : '#a89f92');
+    lab.textContent = m.n;
+    g.appendChild(lab);
+
+    const num = document.createElementNS(NS, 'text');
+    num.setAttribute('x', p.x); num.setAttribute('y', p.y + (p.y > 170 ? 64 : -20));
+    num.setAttribute('text-anchor', 'middle'); num.setAttribute('font-size', '11');
+    num.setAttribute('font-weight', '800');
+    num.setAttribute('fill', '#a89f92');
+    num.textContent = m.at + (m.at === 1 ? ' step' : ' steps');
+    g.appendChild(num);
+  });
+
+  const hiker = document.createElementNS(NS, 'text');
+  hiker.setAttribute('x', hikerPt.x + 36); hiker.setAttribute('y', hikerPt.y - 12);
+  hiker.setAttribute('text-anchor', 'middle'); hiker.setAttribute('font-size', '30');
+  hiker.setAttribute('class', 'hiker');
+  hiker.textContent = buddyStage().e;
+  g.appendChild(hiker);
+
+  const next = MILESTONES.find(m => steps < m.at);
+  $('#map-note').innerHTML = `
+    <h2 style="margin-top:0">You are ${steps} step${steps === 1 ? '' : 's'} along the trail 👣</h2>
+    <p class="sub" style="margin-bottom:6px">
+      📘 ${S.logs.length} books &nbsp;·&nbsp; 🎮 ${clearedLevels()} quest levels &nbsp;·&nbsp; ✨ ${S.stories.length} stories
+    </p>
+    ${next
+      ? `<p style="font-weight:800;margin:0">Next stop: <span class="rainbow">${next.e} ${next.n}</span> — ${next.at - steps} more step${next.at - steps === 1 ? '' : 's'} to go!</p>`
+      : `<p style="font-weight:900;margin:0" class="rainbow">🎉 You reached the end of the trail. You are Reading Royalty!</p>`}
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+      <button class="btn" data-go="library">📖 Read a book</button>
+      <button class="btn mint" data-go="quests">🎮 Play a quest</button>
+    </div>`;
+}
+
+/* ---------- reading buddy ---------- */
+const STAGES = [
+  { at: 0, e: '🥚', n: 'Mystery Egg', say: 'Something is inside… keep reading to find out!' },
+  { at: 30, e: '🐣', n: 'Hatchling', say: 'It hatched! Hello little one 👋' },
+  { at: 80, e: '🐥', n: 'Fluffy', say: 'Fluffy loves it when you read out loud.' },
+  { at: 160, e: '🦉', n: 'Wise Owl', say: 'Your buddy is getting wise, just like you.' },
+  { at: 300, e: '🐉', n: 'Book Dragon', say: 'A real Book Dragon! Nobody messes with a reader. 🔥' }
+];
+
+function buddyStage() {
+  let s = STAGES[0];
+  STAGES.forEach(x => { if (S.gems >= x.at) s = x; });
+  return s;
+}
+
+function renderBuddy() {
+  const st = buddyStage();
+  const i = STAGES.indexOf(st);
+  const next = STAGES[i + 1];
+  const pct = next ? Math.min(100, Math.round(((S.gems - st.at) / (next.at - st.at)) * 100)) : 100;
+
+  $('#buddy-holder').innerHTML = `<span class="buddy ${i === 0 ? 'egg' : ''}" id="buddy">${st.e}</span>`;
+  $('#buddy-name').innerHTML = `<span class="rainbow">${st.n}</span>`;
+  $('#buddy-say').textContent = st.say;
+  $('#grow-fill').style.width = '0%';
+  setTimeout(() => { $('#grow-fill').style.width = pct + '%'; }, 60);
+  $('#grow-text').textContent = next
+    ? `💎 ${S.gems} gems — ${next.at - S.gems} more to become ${next.n} ${next.e}`
+    : `💎 ${S.gems} gems — fully grown! Keep reading anyway 😄`;
+
+  $('#evo-row').innerHTML = STAGES.map((s, k) =>
+    `<div class="evo ${k <= i ? 'on' : ''}"><span class="e">${k <= i ? s.e : '❔'}</span><span class="n">${s.n}</span></div>`).join('');
+
+  const pet = () => {
+    const b = $('#buddy');
+    b.classList.remove('happy'); void b.offsetWidth; b.classList.add('happy');
+    for (let k = 0; k < 6; k++) {
+      const h = document.createElement('span');
+      h.className = 'heart';
+      h.textContent = ['💗', '💛', '💙', '⭐', '✨'][k % 5];
+      h.style.left = (42 + Math.random() * 16) + '%';
+      h.style.bottom = (38 + Math.random() * 12) + '%';
+      h.style.animationDelay = (k * 0.09) + 's';
+      $('#buddy-stage').appendChild(h);
+      setTimeout(() => h.remove(), 1700);
+    }
+    Speech.say(i === 0 ? 'Keep reading and I will hatch!' : st.say.replace(/[^\w\s'!,.?]/g, ''));
+  };
+  $('#buddy').onclick = pet;
+  $('#pet-btn').onclick = pet;
+}
+
+/* ---------- 🎡 surprise-me wheel ---------- */
+function openWheel() {
+  const books = LIBRARY[currentGrade] || [];
+  if (!books.length) return;
+
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.innerHTML = `<div class="sheet">
+    <h2 style="margin:0 0 4px">🎡 Book Wheel</h2>
+    <p class="sub" style="margin-bottom:8px">Spin it and read whatever it lands on!</p>
+    <div class="wheel-holder">
+      <div class="wheel-pin">🔻</div>
+      <div class="wheel" id="wheel">🎲</div>
+    </div>
+    <div id="wheel-out"></div>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px">
+      <button class="btn pink" id="do-spin">🎡 SPIN!</button>
+      <button class="btn ghost" id="close-wheel">Close</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+
+  let turns = 0, spinning = false;
+  const spin = () => {
+    if (spinning) return;
+    spinning = true;
+    $('#wheel-out').innerHTML = '';
+    turns += 5 + Math.random() * 3;
+    $('#wheel').style.transform = `rotate(${turns * 360}deg)`;
+    $('#wheel').textContent = '❓';
+    setTimeout(() => {
+      const b = books[Math.floor(Math.random() * books.length)];
+      $('#wheel').textContent = b.emoji;
+      $('#wheel-out').innerHTML = `<div class="wheel-result">
+        <div style="font-weight:900;font-size:1.15rem;margin-top:6px">${b.title}</div>
+        <div class="sub" style="margin:2px 0 10px">${b.author}</div>
+        <button class="btn mint" id="wheel-read">📖 Read this one!</button>
+      </div>`;
+      $('#wheel-read').onclick = () => { modal.remove(); go('book', b.id); };
+      sparkle();
+      Speech.say('You got ' + b.title);
+      spinning = false;
+    }, 3500);
+  };
+
+  $('#do-spin').onclick = spin;
+  $('#close-wheel').onclick = () => modal.remove();
+  modal.onclick = e => { if (e.target === modal) modal.remove(); };
+  setTimeout(spin, 350);
+}
+
 /* ===========================================================
    BOOT
    =========================================================== */
 bindStars('#man-stars', manStars, v => { manStars = v; });
 updateChip();
 renderHome();
+setTimeout(() => owlSays(OWL_TIPS[0]), 400);
